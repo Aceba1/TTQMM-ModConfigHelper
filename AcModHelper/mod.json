@@ -1,0 +1,10 @@
+﻿{
+  "Id": "aceba1.resources.modhelper.config",
+  "DisplayName": "Config Helper Library",
+  "Author": "Aceba1",
+  "Version": "1.0.0",
+  "Enable": "true",
+  "AssemblyName": "AcModHelper.Config.dll",
+  "EntryMethod": "ModHelper.Config.ModConfig.Patch",
+  "Priority": "First or Last"
+}
