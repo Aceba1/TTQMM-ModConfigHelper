@@ -1,4 +1,4 @@
-# ModConfig Helper Library (for TT-QMM Mods)
+# ModConfig Helper Library (for (TT-)QMM Mods)
 A library packed up as a mod for other mods to manage their `config.json` file
 
 <hr>
