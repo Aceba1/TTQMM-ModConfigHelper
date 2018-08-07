@@ -1,11 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Newtonsoft.Json;
-using UnityEngine;
+using Newtonsoft.Json.Linq;
 
 namespace ModHelper
 {
@@ -17,12 +16,12 @@ namespace ModHelper
         public class ModConfig
         {
             /// <summary>
-            /// Allow the use of System.Reflection within these methods to read and write to binded class fields
+            /// Change methods to read and write to binded class fields, making Config management simpler
             /// </summary>
-            public bool UseReflection = false;
-
+            public bool UseRefList = false;
+            
             /// <summary>
-            /// Get or set a Config value. If it doesn't exist, make a new one (If Reflection : Getting will try to get cooresponding field variable. Setting will also set corresponding variable)
+            /// Get or set a Config value. If it doesn't exist, make a new one. If trying to get a struct or class, use GetConfigDeep (If Ref: Getting will try to get cooresponding reference. Setting will also set corresponding reference)
             /// </summary>
             /// <param name="key">The name of the variable to index</param>
             /// <returns></returns>
@@ -31,7 +30,7 @@ namespace ModHelper
                 get
                 {
                     object result;
-                    if (UseReflection)
+                    if (UseRefList)
                     {
                         if (FieldRefList.TryGetValue(key, out var e))
                         {
@@ -44,14 +43,17 @@ namespace ModHelper
                     }
                     else
                     {
-                        result = config[key];
+                        if (config.ContainsKey(key))
+                            result = config[key];
+                        else
+                            result = null;
                     }
                     return result;
                 }
                 set
                 {
                     config[key] = value;
-                    if (UseReflection)
+                    if (UseRefList)
                     {
                         if (FieldRefList.TryGetValue(key, out var e))
                         {
@@ -60,17 +62,19 @@ namespace ModHelper
                     }
                 }
             }
+
             private Dictionary<string, object> config = new Dictionary<string, object>();
+
             /// <summary>
             /// Key:ID Value[0]:FieldInfo Value[1]:Instance
             /// </summary>
             private Dictionary<string, object[]> FieldRefList = new Dictionary<string, object[]>();
+
             private Dictionary<string, int> FieldRefRepeatCount = new Dictionary<string, int>();
 
             /// <summary>
             /// The location of the Config file
             /// </summary>
-            [JsonIgnore]
             public string ConfigLocation;
 
             /// <summary>
@@ -82,6 +86,7 @@ namespace ModHelper
                 ConfigLocation = path;
                 ReadConfigJsonFile(this);
             }
+
             /// <summary>
             /// Load the Config file from it's path
             /// </summary>
@@ -93,7 +98,7 @@ namespace ModHelper
             }
 
             /// <summary>
-            /// (Reflection) Get the FieldInfo of a class's variable
+            /// Get the FieldInfo of a class's variable
             /// </summary>
             /// <typeparam name="T">The holding class to get the variable from</typeparam>
             /// <param name="VariableName">The name of the variable</param>
@@ -101,7 +106,7 @@ namespace ModHelper
             public static FieldInfo GetFieldInfo<T>(string VariableName) => typeof(T).GetField(VariableName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
 
             /// <summary>
-            /// (Reflection) Get the FieldInfo of a class's variable
+            /// Get the FieldInfo of a class's variable
             /// </summary>
             /// <param name="T">The holding class to get the variable from</param>
             /// <param name="VariableName">The name of the variable</param>
@@ -109,15 +114,16 @@ namespace ModHelper
             public static FieldInfo GetFieldInfo(Type T, string VariableName) => T.GetField(VariableName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
 
             /// <summary>
-            /// (Reflection) Bind a field to the Config for loading and saving (WARNING : Using this will set UseReflection to true)
+            /// (Ref) Bind a field to the Config for loading and saving, to make life easier.
+            /// (Using this will set UseRefList to true)
             /// </summary>
             /// <param name="instance">The class instance to use, null if static</param>
-            /// <param name="field">The variable to use, acquire with 'typeof(Class).GetField("variableName")', or ModConfig.GetFieldInfo</param>
+            /// <param name="field">The variable in its class to use, acquire with 'typeof(Class).GetField("variableName")', or ModConfig.GetFieldInfo&lt;Class&gt;("variableName")</param>
             /// <param name="UpdateRef">Set the value of the variable to what's in the Config, if it exists</param>
             public void BindConfig(object instance, FieldInfo field, bool UpdateRef = true)
             {
-                if (!UseReflection)
-                    UseReflection = true;
+                if (!UseRefList)
+                    UseRefList = true;
 
                 int cache = 0;
                 string ats = "";
@@ -133,10 +139,12 @@ namespace ModHelper
                 if (UpdateRef)
                     ConfigToFieldRef(instance, field, field.Name + ats);
             }
+
             /// <summary>
-            /// (Reflection) Bind a field to the Config for loading and saving (WARNING : Using this will set UseReflection to true)
+            /// (Ref) Bind a field to the Config for loading and saving, to make life easier.
+            /// (Using this will set UseRefList to true)
             /// </summary>
-            /// <typeparam name="T">The class type</typeparam>
+            /// <typeparam name="T">The class (holding the variable)'s type</typeparam>
             /// <param name="instance">The class instance to use, null if static</param>
             /// <param name="VariableName">The name of the variable</param>
             /// <param name="UpdateRef">Set the value of the variable to what's in the Config, if it exists</param>
@@ -182,13 +190,12 @@ namespace ModHelper
                 }
                 catch (Exception e)
                 {
-
                     throw new Exception("Something wrong happened while trying to set a FieldInfo value\n" + e.Message + "\nThe FieldInfo was " + (field.FieldType == typeof(float) ? "a float (" : "not a float (") + field.FieldType.ToString() + ")\nThe name being searched for: " + Search);
                 }
             }
 
             /// <summary>
-            /// Get a value of a specified name from the Config
+            /// Try to get a value of a specified name from the RAW Config
             /// </summary>
             /// <typeparam name="T">The type of object being acquired</typeparam>
             /// <param name="ConfigID">The name of the object to try to get</param>
@@ -204,8 +211,9 @@ namespace ModHelper
                 }
                 return result;
             }
+
             /// <summary>
-            /// Get a float value of a specified name from the Config
+            /// Try to get a float value of a specified name from the RAW Config
             /// </summary>
             /// <param name="ConfigID">The name of the float value to try to get</param>
             /// <param name="value">Returns the float value if it exists</param>
@@ -222,48 +230,162 @@ namespace ModHelper
             }
 
             /// <summary>
-            /// Write Config data to the file (If Reflection: Apply all referenced fields to the Config before serializing)
+            /// Apply a value to a variable or branched off variable in the Config. (such as a struct or class field)
+            /// This should be the preferred method. (If Ref: Try to set the value in the reference)
+            /// </summary>
+            /// <param name="Value">The value to set at the end of the search</param>
+            /// <param name="keys">The keys to search with to get the variable</param>
+            public void SetConfigDeep(object Value, params string[] keys)
+            {
+                if (UseRefList)
+                {
+                    if (FieldRefList.TryGetValue(keys[0], out var e))
+                    {
+                        object lookinst = null;
+                        {
+                            FieldInfo result = (FieldInfo)e[0];
+                            lookinst = GetFieldInfo(result.DeclaringType, keys[0]).GetValue(e[1]);
+                            for (int i = 1; i < keys.Length; i++)
+                            {
+                                result = GetFieldInfo(result.FieldType, keys[i]);
+                                if (i + 1 == keys.Length)
+                                {
+                                    result.SetValue(lookinst, Value);
+                                    return;
+                                }
+                                lookinst = result.GetValue(lookinst);
+                                
+                            }
+                        }
+                    }
+                }
+                if (config[keys[0]] is JToken)
+                {
+                    JToken result;
+                    result = (JToken)config[keys[0]];
+                    for (int i = 1; i < keys.Length-1; i++)
+                    {
+                        result = result[keys[i]];
+                    }
+                    JToken jToken = JToken.FromObject(Value);
+                    result[keys[keys.Length-1]] = jToken.ToString();
+                    return;
+                }
+                else
+                {
+                    Type result = config[keys[0]].GetType();
+                    object lookinst = config[keys[0]];
+                    for (int i = 1; i < keys.Length; i++)
+                    {
+                        FieldInfo fieldInfo = GetFieldInfo(result, keys[i]);
+                        if (i + 1 == keys.Length)
+                        {
+                            fieldInfo.SetValue(lookinst, Value);
+                            return;
+                        }
+                        lookinst = fieldInfo.GetValue(lookinst);
+                        result = fieldInfo.FieldType;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Get the value of a variable or branched off variable in the Config. (such as a struct or class field)
+            /// This should be the preferred method. (If Ref: Try to get the current value in the reference)
+            /// </summary>
+            /// <typeparam name="T">The object type to return from the end of the search</typeparam>
+            /// <param name="keys">The keys to search with to get the variable</param>
+            /// <returns>the value found at the end</returns>
+            public T GetConfigDeep<T>(params string[] keys)
+            {
+                if (UseRefList)
+                {
+                    if (FieldRefList.TryGetValue(keys[0], out var e))
+                    {
+                        object lookinst = null;
+                        {
+                            FieldInfo result = (FieldInfo)e[0];
+                            lookinst = GetFieldInfo(result.DeclaringType, keys[0]).GetValue(e[1]);
+                            for (int i = 1; i < keys.Length; i++)
+                            {
+                                result = GetFieldInfo(result.FieldType, keys[i]);
+                                lookinst = result.GetValue(lookinst);
+                            }
+                        }
+                        return (T)lookinst;
+                    }
+                }
+                if (config[keys[0]] is JToken)
+                {
+                    JToken result = (JToken)config[keys[0]];
+                    for (int i = 1; i < keys.Length; i++)
+                    {
+                        result = result[keys[i]];
+                    }
+                    return result.ToObject<T>();
+                }
+                else
+                {
+                    Type result = config[keys[0]].GetType();
+                    object lookinst = config[keys[0]];
+                    for (int i = 1; i < keys.Length; i++)
+                    {
+                        FieldInfo fieldInfo = GetFieldInfo(result, keys[i]);
+                        lookinst = fieldInfo.GetValue(lookinst);
+                        result = fieldInfo.FieldType;
+                    }
+                    return (T)lookinst;
+                }
+            }
+
+            /// <summary>
+            /// Write Config data to the file
+            /// (If Ref: Apply all referenced fields to the Config before serializing)
+            /// </summary>
+            /// <param name="Config">The ModConfig to write the Config of</param>
+            /// <returns>Returns true if successful</returns>
+            
+            public static bool WriteConfigJsonFile(ModConfig Config)
+            {
+                return Config.WriteConfigJsonFile();
+            }
+
+            /// <summary>
+            /// Write Config data to the file
+            /// (If Ref: Apply all referenced fields to the Config before serializing)
             /// </summary>
             /// <returns>Returns true if successful</returns>
             public bool WriteConfigJsonFile()
             {
-                return WriteConfigJsonFile(this);
-            }
-            /// <summary>
-            /// Write Config data to the file (If Reflection: Apply all referenced fields to the Config before serializing)
-            /// </summary>
-            /// <returns>Returns true if successful</returns>
-            public static bool WriteConfigJsonFile(ModConfig Config)
-            {
                 try
                 {
-                    if (Config.UseReflection)
-                        foreach (var field in Config.FieldRefList)
+                    if (UseRefList)
+                        foreach (var field in FieldRefList)
                         {
                             FieldInfo finfo = (FieldInfo)field.Value[0];
-                            Config[finfo.Name] = finfo.GetValue(field.Value[1]);
+                            config[field.Key] = finfo.GetValue(field.Value[1]);
                         }
 
-                    string json = JsonConvert.SerializeObject(Config.config, Formatting.Indented);
+                    string json = JsonConvert.SerializeObject(config, Formatting.Indented);
 
-                    File.WriteAllText(Config.ConfigLocation, json);
+                    File.WriteAllText(ConfigLocation, json);
 
                     return true;
                 }
                 catch (Exception e)
                 {
-                    
                     UnityEngine.Debug.Log("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
                     return false;
                 }
             }
 
             /// <summary>
-            /// (Reflection) Reload all the Config values and push them to the references
+            /// Reload all the Config values and push them to references.
+            /// This should not be used normally, or should be needed
             /// </summary>
             public void ReapplyConfigToRef()
             {
-                if (UseReflection)
+                if (UseRefList)
                     foreach (var field in FieldRefList)
                     {
                         ConfigToFieldRef(field.Value[1], (FieldInfo)field.Value[0], field.Key);
@@ -271,19 +393,21 @@ namespace ModHelper
             }
 
             /// <summary>
-            /// Reload the Config file (If Reflection: Apply Config changes to binded fields)
+            /// Reload the Config file
+            /// (If Instance Ref: Apply Config changes to references)
             /// </summary>
+            /// <param name="Config">The ModConfig class to add changes to</param>
             /// <returns>Returns true if successful</returns>
-            public bool ReadConfigJsonFile()
+            public static bool ReadConfigJsonFile(ModConfig Config)
             {
-                return ModConfig.ReadConfigJsonFile(this);
+                return Config.ReadConfigJsonFile();
             }
+
             /// <summary>
             /// Reload the Config file
             /// </summary>
-            /// <param name="Config">The ModConfig class to add changes to (If instance uses Reflection: It will apply Config changes to binded fields)</param>
             /// <returns>Returns true if successful</returns>
-            public static bool ReadConfigJsonFile(ModConfig Config)
+            public bool ReadConfigJsonFile()
             {
                 try
                 {
@@ -291,21 +415,28 @@ namespace ModHelper
                     {
                         MissingMemberHandling = MissingMemberHandling.Ignore
                     };
-
-                    string json = File.ReadAllText(Config.ConfigLocation);
-                    var config = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, settings);
-                    foreach (var pair in config)
+                    if (System.IO.File.Exists(ConfigLocation))
                     {
-                        try
+                        string json = File.ReadAllText(ConfigLocation);
+                        var config = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, settings);
+                        foreach (var pair in config)
                         {
-                            Config[pair.Key] = pair.Value;
+                            try
+                            {
+                                this[pair.Key] = pair.Value;
+                            }
+                            catch (Exception e)
+                            {
+                                UnityEngine.Debug.Log("ERROR!\n" + pair.Key + "\n" + e.Message + "\n" + e.StackTrace);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            UnityEngine.Debug.Log("ERROR!\n" + pair.Key + "\n" + e.Message + "\n" + e.StackTrace);
-                        }
+                        return true;
                     }
-                    return true;
+                    else
+                    {
+                        File.WriteAllText(ConfigLocation, "{\n}");
+                        return false;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -314,9 +445,11 @@ namespace ModHelper
                 }
             }
 
+            /// <summary>
+            /// This does nothing, nothing at all.
+            /// </summary>
             public static void Patch()
             {
-
             }
         }
     }
