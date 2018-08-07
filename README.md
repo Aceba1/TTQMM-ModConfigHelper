@@ -51,7 +51,7 @@ public class Patch
     Config = new ModConfig();
 
     Config.BindConfig<Patch>(null, "Setting1"); // Using BindConfig will set UseRef as true, changing some methods to work with the RefList.
-    Config.BindConfig<Patch>(null, "Setting2"); // If 'Setting1' was loaded from the config.json, it will apply the variable to the field.
+    Config.BindConfig<Patch>(null, "Setting2"); // If 'Setting2' was loaded from the config.json, it will apply the variable to the field.
 ```
 These fields are saved for later, in case you'd like to access them through different methods, or save / load the Config.
 If you are using a field from an instance of a class, you must fill out the instance of that class:
