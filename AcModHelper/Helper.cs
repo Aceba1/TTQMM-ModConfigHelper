@@ -282,16 +282,24 @@ namespace ModHelper
                 {
                     Type result = config[keys[0]].GetType();
                     object lookinst = config[keys[0]];
+                    object[] instlist = new object[keys.Length];
+                    instlist[0] = lookinst;
+                    FieldInfo[] resultlist = new FieldInfo[keys.Length];
+                    resultlist[0] = GetFieldInfo(result, keys[1]);
                     for (int i = 1; i < keys.Length; i++)
                     {
                         FieldInfo fieldInfo = GetFieldInfo(result, keys[i]);
                         if (i + 1 == keys.Length)
                         {
                             fieldInfo.SetValue(lookinst, Value);
+                            for (int j = i - 1; j > 0; j--)
+                                resultlist[j].SetValue(instlist[j - 1], instlist[j]);
                             return;
                         }
                         lookinst = fieldInfo.GetValue(lookinst);
                         result = fieldInfo.FieldType;
+                        resultlist[i] = fieldInfo;
+                        instlist[i] = lookinst;
                     }
                 }
             }
