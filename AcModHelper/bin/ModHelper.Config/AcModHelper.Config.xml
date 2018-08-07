@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AcModHelper.Config</name>
+    </assembly>
+    <members>
+        <member name="T:ModHelper.Config.ModConfig">
+            <summary>
+            A helper class to manage your mod's config.json file and use it's values
+            </summary>
+        </member>
+        <member name="F:ModHelper.Config.ModConfig.UseRefList">
+            <summary>
+            Change methods to read and write to binded class fields, making Config management simpler
+            </summary>
+        </member>
+        <member name="P:ModHelper.Config.ModConfig.Item(System.String)">
+            <summary>
+            Get or set a Config value. If it doesn't exist, make a new one. If trying to get a struct or class, use GetConfigDeep (If Ref: Getting will try to get cooresponding reference. Setting will also set corresponding reference)
+            </summary>
+            <param name="key">The name of the variable to index</param>
+            <returns></returns>
+        </member>
+        <member name="F:ModHelper.Config.ModConfig.FieldRefList">
+            <summary>
+            Key:ID Value[0]:FieldInfo Value[1]:Instance
+            </summary>
+        </member>
+        <member name="F:ModHelper.Config.ModConfig.ConfigLocation">
+            <summary>
+            The location of the Config file
+            </summary>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.#ctor">
+            <summary>
+            Load the Config from the current mod's directory
+            </summary>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.#ctor(System.String)">
+            <summary>
+            Load the Config file from it's path
+            </summary>
+            <param name="path">The path of the Config file</param>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.GetFieldInfo``1(System.String)">
+            <summary>
+            Get the FieldInfo of a class's variable
+            </summary>
+            <typeparam name="T">The holding class to get the variable from</typeparam>
+            <param name="VariableName">The name of the variable</param>
+            <returns>FieldInfo representing the class's variable</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.GetFieldInfo(System.Type,System.String)">
+            <summary>
+            Get the FieldInfo of a class's variable
+            </summary>
+            <param name="T">The holding class to get the variable from</param>
+            <param name="VariableName">The name of the variable</param>
+            <returns>FieldInfo representing the class's variable</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.BindConfig(System.Object,System.Reflection.FieldInfo,System.Boolean)">
+            <summary>
+            (Ref) Bind a field to the Config for loading and saving, to make life easier.
+            (Using this will set UseRefList to true)
+            </summary>
+            <param name="instance">The class instance to use, null if static</param>
+            <param name="field">The variable in its class to use, acquire with 'typeof(Class).GetField("variableName")', or ModConfig.GetFieldInfo&lt;Class&gt;("variableName")</param>
+            <param name="UpdateRef">Set the value of the variable to what's in the Config, if it exists</param>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.BindConfig``1(``0,System.String,System.Boolean)">
+            <summary>
+            (Ref) Bind a field to the Config for loading and saving, to make life easier.
+            (Using this will set UseRefList to true)
+            </summary>
+            <typeparam name="T">The class (holding the variable)'s type</typeparam>
+            <param name="instance">The class instance to use, null if static</param>
+            <param name="VariableName">The name of the variable</param>
+            <param name="UpdateRef">Set the value of the variable to what's in the Config, if it exists</param>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.TryGetConfig``1(System.String,``0@)">
+            <summary>
+            Try to get a value of a specified name from the RAW Config
+            </summary>
+            <typeparam name="T">The type of object being acquired</typeparam>
+            <param name="ConfigID">The name of the object to try to get</param>
+            <param name="value">Returns the object as type if it exists</param>
+            <returns>Returns true if the object exists</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.TryGetConfigF(System.String,System.Single@)">
+            <summary>
+            Try to get a float value of a specified name from the RAW Config
+            </summary>
+            <param name="ConfigID">The name of the float value to try to get</param>
+            <param name="value">Returns the float value if it exists</param>
+            <returns>Returns true if the object exists</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.SetConfigDeep(System.Object,System.String[])">
+            <summary>
+            Apply a value to a variable or branched off variable in the Config. (such as a struct or class field)
+            This should be the preferred method. (If Ref: Try to set the value in the reference)
+            </summary>
+            <param name="Value">The value to set at the end of the search</param>
+            <param name="keys">The keys to search with to get the variable</param>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.GetConfigDeep``1(System.String[])">
+            <summary>
+            Get the value of a variable or branched off variable in the Config. (such as a struct or class field)
+            This should be the preferred method. (If Ref: Try to get the current value in the reference)
+            </summary>
+            <typeparam name="T">The object type to return from the end of the search</typeparam>
+            <param name="keys">The keys to search with to get the variable</param>
+            <returns>the value found at the end</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.WriteConfigJsonFile(ModHelper.Config.ModConfig)">
+            <summary>
+            Write Config data to the file
+            (If Ref: Apply all referenced fields to the Config before serializing)
+            </summary>
+            <param name="Config">The ModConfig to write the Config of</param>
+            <returns>Returns true if successful</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.WriteConfigJsonFile">
+            <summary>
+            Write Config data to the file
+            (If Ref: Apply all referenced fields to the Config before serializing)
+            </summary>
+            <returns>Returns true if successful</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.ReapplyConfigToRef">
+            <summary>
+            Reload all the Config values and push them to references.
+            This should not be used normally, or should be needed
+            </summary>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.ReadConfigJsonFile(ModHelper.Config.ModConfig)">
+            <summary>
+            Reload the Config file
+            (If Instance Ref: Apply Config changes to references)
+            </summary>
+            <param name="Config">The ModConfig class to add changes to</param>
+            <returns>Returns true if successful</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.ReadConfigJsonFile">
+            <summary>
+            Reload the Config file
+            </summary>
+            <returns>Returns true if successful</returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.Patch">
+            <summary>
+            This does nothing, nothing at all.
+            </summary>
+        </member>
+    </members>
+</doc>
