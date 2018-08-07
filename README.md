@@ -8,6 +8,7 @@ A library packed up as a mod for other mods to manage their `config.json` file
 ### Downloading Latest Build 
 
 You can download the most recently built files [here](https://github.com/Aceba1/TTQMM-ModConfigHelper/tree/master/AcModHelper/bin)
+
 Download the folder and put it in the QMods directory in your game installation.
 
 <hr>
@@ -42,7 +43,7 @@ public class Patch
   public static ModConfig Config;
   
   public static float Setting1; 
-  private static int Setting2; // The default value of the field, if the Config does not have it;
+  private static int Setting2 = 32; // The default value of the field, if the Config does not have it;
   
   public static void Main()
   {
