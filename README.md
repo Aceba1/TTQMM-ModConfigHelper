@@ -92,8 +92,6 @@ Config.SetConfigDeep(0.125f,"struct1", "Position", "z");
 ```
 There is a matching `SetConfigDeep` that lets you modify a field at the end of a branch, and updates the values going up. 
 
-<hr>
-
 Remember that if you aren't using the RefList, you will have to manually apply config changes before saving.
 
 If you use the RefList with this code, a few things will change: For example, instead of getting and setting the values found in the Config, it will try to use the binded fields for setting and getting.
