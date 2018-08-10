@@ -382,6 +382,7 @@ namespace ModHelper
                         }
 
                     string json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                    var settings = new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
                     File.WriteAllText(ConfigLocation, json);
 
