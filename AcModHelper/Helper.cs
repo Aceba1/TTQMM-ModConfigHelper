@@ -381,8 +381,8 @@ namespace ModHelper
                             config[field.Key] = finfo.GetValue(field.Value[1]);
                         }
 
+                    var settings = new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, Error = HandleSerializeError };
                     string json = JsonConvert.SerializeObject(config, Formatting.Indented);
-                    var settings = new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
                     File.WriteAllText(ConfigLocation, json);
 
@@ -393,6 +393,12 @@ namespace ModHelper
                     UnityEngine.Debug.Log("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
                     return false;
                 }
+            }
+
+            private void HandleSerializeError(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
+            {
+                UnityEngine.Debug.LogException(args.ErrorContext.Error);
+                args.ErrorContext.Handled = true;
             }
 
             /// <summary>
