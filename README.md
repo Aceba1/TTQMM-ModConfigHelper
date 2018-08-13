@@ -67,7 +67,7 @@ var t = typeof(Program).GetField("Shop").FieldType.GetField("ClosingTime");
 Config.BindConfig(Shop, t); // Use field of class or struct Shop in Program
 ```
 
-`BindConfig` should always be used at the start, and shouldn't be branched off. Try to keep them together.
+`BindConfig` should always be used at the start, before the commands that depend on the binded values. The order of when fields-of-the-same-name are binded is very important.
 
 When you decide that you want to save your binded fields' values, all you have to do is call `WriteConfigJsonFile()` and your variables will be stored in the `config.json`, ready to be put back in their spots the next time it's loaded.
 
