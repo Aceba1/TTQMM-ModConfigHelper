@@ -19,7 +19,61 @@ namespace ModHelper
             /// Change methods to read and write to binded class fields, making Config management simpler
             /// </summary>
             public bool UseRefList = false;
-            
+
+            private bool Saved = true;
+
+            private readonly string FileName = "config.json";
+
+            private FileSystemWatcher FileSystemWatcher;
+
+            /// <summary>
+            /// Called whenever the Config is reloaded from the file changing (UpdateOnFileChange)
+            /// </summary>
+            public event Action UpdateConfig;
+
+            /// <summary>
+            /// Update the config if the file has changed. Will invoke 'UpdateConfig' when updated
+            /// </summary>
+            public bool UpdateOnFileChange
+            {
+                get => FileSystemWatcher != null;
+                set
+                {
+                    if (value == true)
+                    {
+                        if (!UpdateOnFileChange)
+                        {
+                            FileSystemWatcher = new FileSystemWatcher(Path.Combine(ConfigLocation, @"..\"));
+                            FileSystemWatcher.Changed += FileSystemWatcher_Changed;
+                        }
+                    }
+                    else
+                    {
+                        if (UpdateOnFileChange)
+                        {
+                            FileSystemWatcher.Changed -= FileSystemWatcher_Changed;
+                            FileSystemWatcher.Dispose();
+                            FileSystemWatcher = null;
+                        }
+                    }
+                }
+            }
+
+            private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+            {
+                if (e.Name != FileName)
+                {
+                    return;
+                }
+                if (Saved)
+                {
+                    Saved = false;
+                    return;
+                }
+                ReadConfigJsonFile();
+                UpdateConfig?.Invoke();
+            }
+
             /// <summary>
             /// Get or set a Config value. If it doesn't exist, make a new one. If trying to get a struct or class, use GetConfigDeep (If Ref: Getting will try to get cooresponding reference. Setting will also set corresponding reference)
             /// </summary>
@@ -80,21 +134,25 @@ namespace ModHelper
             /// <summary>
             /// Load the Config from the current mod's directory
             /// </summary>
-            public ModConfig()
+            public ModConfig(bool UpdateOnFileChange = true)
             {
-                string path = Path.Combine(Assembly.GetCallingAssembly().Location, "..\\config.json");
+                string path = Path.Combine(Assembly.GetCallingAssembly().Location, @"..\config.json");
                 ConfigLocation = path;
                 ReadConfigJsonFile(this);
+                this.UpdateOnFileChange = UpdateOnFileChange;
             }
 
             /// <summary>
             /// Load the Config file from it's path
             /// </summary>
             /// <param name="path">The path of the Config file</param>
-            public ModConfig(string path)
+            /// <param name="UpdateOnFileChange"></param>
+            public ModConfig(string path, bool UpdateOnFileChange = true)
             {
                 ConfigLocation = path;
+                FileName = new FileInfo(path).Name;
                 ReadConfigJsonFile(this);
+                this.UpdateOnFileChange = UpdateOnFileChange;
             }
 
             /// <summary>
@@ -195,36 +253,69 @@ namespace ModHelper
             }
 
             /// <summary>
-            /// Try to get a value of a specified name from the RAW Config
+            /// Try to change a value to a specific type
+            /// </summary>
+            /// <typeparam name="T">The type to convert to</typeparam>
+            /// <param name="cache">The value to convert</param>
+            /// <returns></returns>
+            public static T ConvertToType<T>(object cache)
+            {
+                try
+                {
+                    return (T)cache;
+                }
+                catch
+                {
+                    try
+                    {
+                        return (T)Convert.ChangeType(cache, typeof(T));
+                    }
+                    catch
+                    {
+                        return ((Newtonsoft.Json.Linq.JObject)cache).ToObject<T>();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Try to get a value from the RAW Config and convert to Type T
             /// </summary>
             /// <typeparam name="T">The type of object being acquired</typeparam>
             /// <param name="ConfigID">The name of the object to try to get</param>
-            /// <param name="value">Returns the object as type if it exists</param>
-            /// <returns>Returns true if the object exists</returns>
-            public bool TryGetConfig<T>(string ConfigID, ref T value)
+            /// <param name="value">The value to write to if it exists</param>
+            /// <param name="AddIfMissing">Add the value to Config if it cannot be found</param>
+            /// <returns>Returns true if the object exists in Config</returns>
+            public bool TryGetConfig<T>(string ConfigID, ref T value, bool AddIfMissing = true)
             {
-                object cache = null;
-                bool result = this.config.TryGetValue(ConfigID, out cache);
+                bool result = this.config.TryGetValue(ConfigID, out object cache);
                 if (result)
                 {
-                    value = (T)cache;
+                    value = ConvertToType<T>(cache);
+                }
+                else if (AddIfMissing)
+                {
+                    config[ConfigID] = value;
                 }
                 return result;
             }
 
             /// <summary>
-            /// Try to get a float value of a specified name from the RAW Config
+            /// Try to get a float value from the RAW Config (old)
             /// </summary>
             /// <param name="ConfigID">The name of the float value to try to get</param>
             /// <param name="value">Returns the float value if it exists</param>
+            /// /// <param name="AddIfMissing">Add the value to Config if it cannot be found</param>
             /// <returns>Returns true if the object exists</returns>
-            public bool TryGetConfigF(string ConfigID, ref float value)
+            public bool TryGetConfigF(string ConfigID, ref float value, bool AddIfMissing = true)
             {
-                object cache = null;
-                bool result = this.config.TryGetValue(ConfigID, out cache);
+                bool result = this.config.TryGetValue(ConfigID, out object cache);
                 if (result)
                 {
                     value = Convert.ToSingle(cache);
+                }
+                else if (AddIfMissing)
+                {
+                    config[ConfigID] = value;
                 }
                 return result;
             }
@@ -384,6 +475,11 @@ namespace ModHelper
                     var settings = new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore, Error = HandleSerializeError };
                     string json = JsonConvert.SerializeObject(config, Formatting.Indented);
 
+                    if (UpdateOnFileChange)
+                    {
+                        Saved = true;
+                    }
+                    
                     File.WriteAllText(ConfigLocation, json);
 
                     return true;

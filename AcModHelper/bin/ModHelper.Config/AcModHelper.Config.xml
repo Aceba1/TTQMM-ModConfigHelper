@@ -14,6 +14,16 @@
             Change methods to read and write to binded class fields, making Config management simpler
             </summary>
         </member>
+        <member name="E:ModHelper.Config.ModConfig.UpdateConfig">
+            <summary>
+            Called whenever the Config is reloaded from the file changing (UpdateOnFileChange)
+            </summary>
+        </member>
+        <member name="P:ModHelper.Config.ModConfig.UpdateOnFileChange">
+            <summary>
+            Update the config if the file has changed. Will invoke 'UpdateConfig' when updated
+            </summary>
+        </member>
         <member name="P:ModHelper.Config.ModConfig.Item(System.String)">
             <summary>
             Get or set a Config value. If it doesn't exist, make a new one. If trying to get a struct or class, use GetConfigDeep (If Ref: Getting will try to get cooresponding reference. Setting will also set corresponding reference)
@@ -31,16 +41,17 @@
             The location of the Config file
             </summary>
         </member>
-        <member name="M:ModHelper.Config.ModConfig.#ctor">
+        <member name="M:ModHelper.Config.ModConfig.#ctor(System.Boolean)">
             <summary>
             Load the Config from the current mod's directory
             </summary>
         </member>
-        <member name="M:ModHelper.Config.ModConfig.#ctor(System.String)">
+        <member name="M:ModHelper.Config.ModConfig.#ctor(System.String,System.Boolean)">
             <summary>
             Load the Config file from it's path
             </summary>
             <param name="path">The path of the Config file</param>
+            <param name="UpdateOnFileChange"></param>
         </member>
         <member name="M:ModHelper.Config.ModConfig.GetFieldInfo``1(System.String)">
             <summary>
@@ -77,21 +88,31 @@
             <param name="VariableName">The name of the variable</param>
             <param name="UpdateRef">Set the value of the variable to what's in the Config, if it exists</param>
         </member>
-        <member name="M:ModHelper.Config.ModConfig.TryGetConfig``1(System.String,``0@)">
+        <member name="M:ModHelper.Config.ModConfig.ConvertToType``1(System.Object)">
             <summary>
-            Try to get a value of a specified name from the RAW Config
+            Try to change a value to a specific type
+            </summary>
+            <typeparam name="T">The type to convert to</typeparam>
+            <param name="cache">The value to convert</param>
+            <returns></returns>
+        </member>
+        <member name="M:ModHelper.Config.ModConfig.TryGetConfig``1(System.String,``0@,System.Boolean)">
+            <summary>
+            Try to get a value from the RAW Config and convert to Type T
             </summary>
             <typeparam name="T">The type of object being acquired</typeparam>
             <param name="ConfigID">The name of the object to try to get</param>
-            <param name="value">Returns the object as type if it exists</param>
-            <returns>Returns true if the object exists</returns>
+            <param name="value">The value to write to if it exists</param>
+            <param name="AddIfMissing">Add the value to Config if it cannot be found</param>
+            <returns>Returns true if the object exists in Config</returns>
         </member>
-        <member name="M:ModHelper.Config.ModConfig.TryGetConfigF(System.String,System.Single@)">
+        <member name="M:ModHelper.Config.ModConfig.TryGetConfigF(System.String,System.Single@,System.Boolean)">
             <summary>
-            Try to get a float value of a specified name from the RAW Config
+            Try to get a float value from the RAW Config (old)
             </summary>
             <param name="ConfigID">The name of the float value to try to get</param>
             <param name="value">Returns the float value if it exists</param>
+            /// <param name="AddIfMissing">Add the value to Config if it cannot be found</param>
             <returns>Returns true if the object exists</returns>
         </member>
         <member name="M:ModHelper.Config.ModConfig.SetConfigDeep(System.Object,System.String[])">
