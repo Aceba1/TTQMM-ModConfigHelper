@@ -24,7 +24,7 @@ namespace ModHelper
 
             private readonly string FileName = "config.json";
 
-            private FileSystemWatcher FileSystemWatcher;
+            private FileSystemWatcher FileSystemWatcher = null;
 
             /// <summary>
             /// Called whenever the Config is reloaded from the file changing (UpdateOnFileChange)
@@ -41,15 +41,17 @@ namespace ModHelper
                 {
                     if (value == true)
                     {
-                        if (!UpdateOnFileChange)
+                        if (FileSystemWatcher == null)
                         {
+                            string path = Path.Combine(ConfigLocation, @"..\");
                             FileSystemWatcher = new FileSystemWatcher(Path.Combine(ConfigLocation, @"..\"));
                             FileSystemWatcher.Changed += FileSystemWatcher_Changed;
+                            Console.WriteLine("Created Watcher at \"" + path + "\"");
                         }
                     }
                     else
                     {
-                        if (UpdateOnFileChange)
+                        if (FileSystemWatcher != null)
                         {
                             FileSystemWatcher.Changed -= FileSystemWatcher_Changed;
                             FileSystemWatcher.Dispose();
@@ -61,6 +63,7 @@ namespace ModHelper
 
             private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
             {
+                Console.WriteLine(e.Name + " has changed");
                 if (e.Name != FileName)
                 {
                     return;
@@ -70,6 +73,7 @@ namespace ModHelper
                     Saved = false;
                     return;
                 }
+                Console.WriteLine("Reloading config");
                 ReadConfigJsonFile();
                 UpdateConfig?.Invoke();
             }
