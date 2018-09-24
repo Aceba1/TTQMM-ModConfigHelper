@@ -43,8 +43,8 @@ namespace ModHelper
                     {
                         if (FileSystemWatcher == null)
                         {
-                            string path = Path.Combine(ConfigLocation, @"..\");
-                            FileSystemWatcher = new FileSystemWatcher(Path.Combine(ConfigLocation, @"..\"));
+                            string path = Path.GetFullPath(Path.Combine(ConfigLocation, @".."));
+                            FileSystemWatcher = new FileSystemWatcher(path);
                             FileSystemWatcher.Changed += FileSystemWatcher_Changed;
                             Console.WriteLine("Created Watcher at \"" + path + "\"");
                         }
