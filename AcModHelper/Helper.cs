@@ -31,6 +31,8 @@ namespace ModHelper
             /// </summary>
             public event Action UpdateConfig;
 
+            private string TrimBackFolder(string source) => source.Substring(0, source.LastIndexOfAny(new char[] { '\\', '/' }));
+
             /// <summary>
             /// Update the config if the file has changed. Will invoke 'UpdateConfig' when updated
             /// </summary>
@@ -43,9 +45,19 @@ namespace ModHelper
                     {
                         if (FileSystemWatcher == null)
                         {
-                            string path = Path.GetFullPath(Path.Combine(ConfigLocation, @".."));
-                            FileSystemWatcher = new FileSystemWatcher(path);
+                            string path = TrimBackFolder(ConfigLocation);
+                            FileSystemWatcher = new FileSystemWatcher();
+                            FileSystemWatcher.Path = path;
+                            /* Watch for changes in LastAccess and LastWrite times, and 
+                               the renaming of files or directories. */
+                            FileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite
+                               | NotifyFilters.FileName | NotifyFilters.DirectoryName;
+                            // Only watch text files.
+                            FileSystemWatcher.Filter = FileName;
+
+                            // Add event handlers.
                             FileSystemWatcher.Changed += FileSystemWatcher_Changed;
+                            FileSystemWatcher.EnableRaisingEvents = true;
                             Console.WriteLine("Created Watcher at \"" + path + "\"");
                         }
                     }
@@ -64,10 +76,6 @@ namespace ModHelper
             private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
             {
                 Console.WriteLine(e.Name + " has changed");
-                if (e.Name != FileName)
-                {
-                    return;
-                }
                 if (Saved)
                 {
                     Saved = false;
@@ -140,7 +148,7 @@ namespace ModHelper
             /// </summary>
             public ModConfig(bool UpdateOnFileChange = true)
             {
-                string path = Path.Combine(Assembly.GetCallingAssembly().Location, @"..\config.json");
+                string path = Path.Combine(TrimBackFolder(Assembly.GetCallingAssembly().Location), "config.json");
                 ConfigLocation = path;
                 ReadConfigJsonFile(this);
                 this.UpdateOnFileChange = UpdateOnFileChange;
@@ -490,14 +498,15 @@ namespace ModHelper
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.Log("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
+                    Console.WriteLine("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
                     return false;
                 }
             }
 
             private void HandleSerializeError(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
             {
-                UnityEngine.Debug.LogException(args.ErrorContext.Error);
+                Console.WriteLine(args.ErrorContext.Error.Message);
+                Console.WriteLine(args.ErrorContext.Error.StackTrace);
                 args.ErrorContext.Handled = true;
             }
 
@@ -549,7 +558,7 @@ namespace ModHelper
                             }
                             catch (Exception e)
                             {
-                                UnityEngine.Debug.Log("ERROR!\n" + pair.Key + "\n" + e.Message + "\n" + e.StackTrace);
+                                Console.WriteLine("ERROR!\n" + pair.Key + "\n" + e.Message + "\n" + e.StackTrace);
                             }
                         }
                         return true;
@@ -562,7 +571,7 @@ namespace ModHelper
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.Log("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
+                    Console.WriteLine("ERROR! config.json deserialization failed.\n" + e.Message + "\n" + e.StackTrace);
                     return false;
                 }
             }
