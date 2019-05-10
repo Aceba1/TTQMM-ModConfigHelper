@@ -9,7 +9,7 @@ A library packed up as a mod for other mods to manage their `config.json` file
 
 You can download the most recently built files [here](https://github.com/Aceba1/TTQMM-ModConfigHelper/tree/master/AcModHelper/bin)
 
-Download the folder and put it in the QMods directory in your game installation.
+If using for TerraTech, it is recommended you acquire this mod through the [TerraTech Mod Manager](https://github.com/Aceba1/TerraTech-Mod-Manager)
 
 <hr>
 
